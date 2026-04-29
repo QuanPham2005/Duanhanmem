@@ -196,7 +196,7 @@ Teacher Dashboard
 
 Admin Dashboard
 
-![admin](https://github.com/user-attachments/assets/80681180-c318-4aa8-bce4-25f7b1dcec5b)
+![admin](https://github.com/user-attachments/assets/f1dd4c78-bf81-4ca8-9a7a-b803b303d474)
 
 ## Tài khoản mặc định
 
