@@ -183,20 +183,20 @@ Sau khi chạy lần đầu, hệ thống sẽ tự tạo các tài khoản mặ
 
 Landing Page 
 
-![landingpage Dark](https://github.com/rudrax14/MERN_STACK-StudentTeacher-Booking-Appointment/assets/97178716/d3d4b1ef-e3ff-413e-afd4-3dabce321705)
+![landingpage](https://github.com/user-attachments/assets/80681180-c318-4aa8-bce4-25f7b1dcec5b)
 
 Student Dashboard
 
-![student dashboard dark](https://github.com/rudrax14/MERN_STACK-StudentTeacher-Booking-Appointment/assets/97178716/ab39e093-3bad-4101-982d-5eb459593580)
+![student dashboard](https://github.com/user-attachments/assets/fb4e5a37-6062-4db6-a1aa-2dc9cd4fbc49)
 
 Teacher Dashboard
 
-![teacher d Dark](https://github.com/rudrax14/MERN_STACK-StudentTeacher-Booking-Appointment/assets/97178716/ab56fb55-e38f-47d9-9622-0e48257d06e5)
+![teacher dashboard](https://github.com/user-attachments/assets/d9e034fa-5d25-4490-9179-5296b19b3536)
 
 
 Admin Dashboard
 
-![admin ](https://github.com/rudrax14/MERN_STACK-StudentTeacher-Booking-Appointment/assets/97178716/5a3a856a-e26c-4e83-8179-1bb4da6ee810)
+![admin](https://github.com/user-attachments/assets/80681180-c318-4aa8-bce4-25f7b1dcec5b)
 
 ## Tài khoản mặc định
 
