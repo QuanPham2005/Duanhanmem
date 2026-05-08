@@ -111,6 +111,11 @@ export const Header = ({ title, notificationsCount = 0, user, bgClass = "bg-whit
   }, [location.pathname, currentNotificationsPath]);
 
   const handleBellClick = () => {
+    if (isAdminArea) {
+      navigate("/admin/dashboard/notifications");
+      return;
+    }
+
     const willOpen = !showNotifications;
     setShowNotifications((prev) => !prev);
 

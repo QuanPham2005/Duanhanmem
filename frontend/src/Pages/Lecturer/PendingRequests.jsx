@@ -438,11 +438,11 @@ const PendingRequests = () => {
 
           {selectedAppointment && (
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center  "
+              className="fixed inset-0 z-[9999] flex items-start justify-center px-4 pb-6 pt-24"
               onClick={() => setSelectedAppointment(null)}
             >
               <div
-                    className="w-full max-w-4xl max-h-[calc(100vh-1rem)] overflow-y-auto rounded-xl bg-white p-4 shadow-2xl"
+                    className="w-full max-w-4xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl bg-white p-4 shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-200 pb-3">
@@ -596,11 +596,11 @@ const PendingRequests = () => {
 
           {showAdjustModal && selectedAppointment && (
             <div
-              className="fixed inset-0 z-[60] flex items-center justify-center px-2 py-3 sm:px-3 sm:py-4"
+              className="fixed inset-0 z-[10000] flex items-start justify-center px-4 pt-24 pb-6"
               onClick={() => setShowAdjustModal(false)}
             >
               <div
-                className="w-full max-w-[calc(100vw-2rem)] sm:max-w-[36rem] lg:max-w-[40rem] max-h-[calc(100vh-6rem)] sm:max-h-[calc(100vh-5rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl"
+                className="w-full max-w-3xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-amber-500 px-4 py-3 text-white">
