@@ -172,25 +172,6 @@ exports.updateStudentPassword = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: "SUCCESS", message: "Đã cập nhật mật khẩu sinh viên" });
 });
 
-// APPROVE STUDENT
-exports.approveStudent = catchAsync(async (req, res, next) => {
-  const student = await Student.findByPk(req.params.id, { include: [{ model: User, as: 'StudentUser' }] });
-  if (!student) return next(new AppError("Student not found", 404));
-
-  res.status(200).json({ status: "SUCCESS", message: "Student Approved" });
-});
-
-// DELETE STUDENT
-exports.deleteStudent = catchAsync(async (req, res, next) => {
-  const student = await Student.findByPk(req.params.id, { include: [{ model: User, as: 'StudentUser' }] });
-  if (!student) return next(new AppError("Student not found", 404));
-
-  await Student.destroy({ where: { Student_ID: req.params.id } });
-  await User.destroy({ where: { ID: student.User_ID } });
-
-  res.status(200).json({ status: "SUCCESS", message: "Student deleted" });
-});
-
 // ---------------- Teacher ----------------
 
 // CREATE TEACHER
@@ -327,36 +308,6 @@ exports.getTeacher = catchAsync(async (req, res, next) => {
   });
   if (!lecturer) return next(new AppError("Teacher not found", 404));
   res.status(200).json({ status: "SUCCESS", data: { lecturer } });
-});
-// DELETE TEACHER
-exports.deleteTeacher = catchAsync(async (req, res, next) => {
-  const lecturer = await Lecturer.findByPk(req.params.id, {
-    include: [{ model: User, as: 'LecturerUser' }]
-  });
-  if (!lecturer) return next(new AppError("Teacher not found", 404));
-
-  const email = lecturer.Email;
-
-  // Xóa các slot của giảng viên
-  const slots = await AvailableSlot.findAll({
-    where: { Lecturer_ID: req.params.id },
-    attributes: ['Slot_ID']
-  });
-  const slotIds = slots.map(s => s.Slot_ID);
-
-  if (slotIds.length > 0) {
-    await Appointment.destroy({ where: { Slot_ID: { [Op.in]: slotIds } } });
-  }
-
-  await AvailableSlot.destroy({ where: { Lecturer_ID: req.params.id } });
-  await Lecturer.destroy({ where: { Lecturer_ID: req.params.id } });
-
-  // Xóa user liên kết
-  if (lecturer.LecturerUser) {
-    await User.destroy({ where: { ID: lecturer.LecturerUser.ID } });
-  }
-
-  res.status(200).json({ status: "SUCCESS", message: "Lecturer deleted" });
 });
 // ---------------- Department ----------------
 

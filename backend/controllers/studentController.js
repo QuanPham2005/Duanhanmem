@@ -412,6 +412,8 @@ exports.getLecturerById = catchAsync(async (req, res, next) => {
         major: plain.LecturerMajor ? plain.LecturerMajor.MajorName : null,
         Dept_ID: plain.Dept_ID,
         Major_ID: plain.Major_ID,
+        Bio: plain.Bio || null,
+        bio: plain.Bio || null,
       },
     },
   });

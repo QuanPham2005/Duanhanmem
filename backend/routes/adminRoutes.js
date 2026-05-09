@@ -16,8 +16,7 @@ router.route('/teachers')
 // Lấy, sửa, xóa giảng viên theo id
 router.route('/teachers/:id')
   .get(authController.verifyToken, adminController.allow('Admin'), adminController.getTeacher)
-  .patch(authController.verifyToken, adminController.allow('Admin'), adminController.updateTeacher)
-  .delete(authController.verifyToken, adminController.allow('Admin'), adminController.deleteTeacher);
+  .patch(authController.verifyToken, adminController.allow('Admin'), adminController.updateTeacher);
 
 router.patch('/teachers/:id/status', authController.verifyToken, adminController.allow('Admin'), adminController.toggleTeacherStatus);
 router.patch('/teachers/:id/password', authController.verifyToken, adminController.allow('Admin'), adminController.updateTeacherPassword);
@@ -31,12 +30,6 @@ router.patch('/students/:id/password', authController.verifyToken, adminControll
 
 // Lấy danh sách sinh viên
 router.get('/students', authController.verifyToken, adminController.allow('Admin'), adminController.getAllStudents);
-
-// Approve student
-router.patch('/approveStudent/:id', authController.verifyToken, adminController.allow('Admin'), adminController.approveStudent);
-
-// Reject student
-router.delete('/rejectStudent/:id', authController.verifyToken, adminController.allow('Admin'), adminController.deleteStudent);
 
 // ---------------- Departments ----------------
 router.route('/departments')
