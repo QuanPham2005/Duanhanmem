@@ -17,24 +17,15 @@ const LecturerDashboard = () => {
   const jwt = () => localStorage.getItem("Teacher jwtToken");
   const userName = localStorage.getItem("Teacher Name") || "Giảng viên";
 
-  // Hàm kiểm tra appointment có quá hạn không
   const isAppointmentExpired = (appointment) => {
-    if (!appointment || !appointment.AvailableSlot) return false;
-    
-    const slotDate = appointment.AvailableSlot.Date;
-    const slotTime = appointment.AvailableSlot.Time;
-    
-    if (!slotDate || !slotTime) return false;
-    
-    // Tạo đối tượng Date từ slot date và time
-    const [year, month, day] = slotDate.split('-').map(Number);
-    const [hours, minutes] = slotTime.split(':').map(Number);
-    
-    const appointmentDateTime = new Date(year, month - 1, day, hours, minutes);
-    const now = new Date();
-    
-    // Appointment quá hạn nếu thời gian đã qua
-    return appointmentDateTime < now;
+    const slot = appointment?.AvailableSlot;
+    if (!slot?.Date || slot.EndTime == null) return false;
+    const [year, month, day] = String(slot.Date).slice(0, 10).split("-").map(Number);
+    const parts = String(slot.EndTime).split(":").map((n) => Number(n) || 0);
+    const [hours, minutes, seconds] = [parts[0], parts[1] ?? 0, parts[2] ?? 0];
+    if (!year || !month || !day || Number.isNaN(hours)) return false;
+    const slotEnd = new Date(year, month - 1, day, hours, minutes, seconds, 0);
+    return slotEnd.getTime() <= Date.now();
   };
 
   useEffect(() => {

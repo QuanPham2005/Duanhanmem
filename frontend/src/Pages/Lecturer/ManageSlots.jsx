@@ -46,10 +46,11 @@ const ManageSlots = () => {
             ? [normalizeSlot(raw)].filter(Boolean)
             : [];
         setSlots(list);
-        const removed = res.data.meta?.removed || 0;
-        if (removed > 0) {
-          toast('Có ' + removed + ' khung giờ đã quá hạn và được xóa tự động', { icon: '⚠️' });
-        }
+        // Nếu muốn tắt thông báo tự động xóa khung giờ đã quá hạn, giữ nguyên và không hiện toast.
+        // const removed = res.data.meta?.removed || 0;
+        // if (removed > 0) {
+        //   toast('Có ' + removed + ' khung giờ đã quá hạn và được xóa tự động', { icon: '⚠️' });
+        // }
       })
       .catch(() => {
         toast.error("Không thể tải danh sách khung giờ.");

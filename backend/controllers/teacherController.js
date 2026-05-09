@@ -18,6 +18,43 @@ const getLecturerIdFromUserId = async (userId) => {
   return row ? row.Lecturer_ID : null;
 };
 
+const getCurrentDateTimeStrings = () => {
+  const now = new Date();
+  return {
+    today: now.toISOString().slice(0, 10),
+    currentTime: now.toTimeString().slice(0, 8),
+  };
+};
+
+const isSlotExpired = (slot) => {
+  if (!slot || !slot.Date || !slot.EndTime) return false;
+  const { today, currentTime } = getCurrentDateTimeStrings();
+  return slot.Date < today || (slot.Date === today && slot.EndTime <= currentTime);
+};
+
+const rejectPendingAppointmentsForSlots = async (slotIds) => {
+  if (!slotIds || slotIds.length === 0) return;
+  await AppointmentModel.update(
+    {
+      Status: 'Rejected',
+      RejectionReason: 'Khung giờ đã quá hạn',
+      HandledAt: new Date(),
+    },
+    {
+      where: {
+        Slot_ID: { [Op.in]: slotIds },
+        Status: 'Pending',
+      },
+    }
+  );
+};
+
+const deleteRejectedAppointmentsForSlot = async (slotId) => {
+  await AppointmentModel.destroy({
+    where: { Slot_ID: slotId, Status: 'Rejected' },
+  });
+};
+
 // Lấy tất cả sinh viên
 exports.getAllStudents = catchAsync(async (req, res, next) => {
   const students = await Student.findAll({ include: [User] });
@@ -204,17 +241,12 @@ exports.getMySlots = catchAsync(async (req, res, next) => {
   const expiredSlotIds = expiredSlots.map((s) => s.Slot_ID);
 
   // Tự động chuyển các yêu cầu pending thuộc slot quá hạn thành rejected
-  for (const slotId of expiredSlotIds) {
-    await AppointmentModel.update(
-      { Status: 'Rejected' },
-      { where: { Slot_ID: slotId, Status: 'Pending' } }
-    );
-  }
+  await rejectPendingAppointmentsForSlots(expiredSlotIds);
 
   // IMPORTANT:
   // GET endpoint không được xóa dữ liệu để tránh side effect và tránh lỗi FK.
   // Slot quá hạn sẽ được loại khỏi kết quả trả về thay vì hard-delete tại đây.
-  const removedCount = 0;
+  const removedCount = expiredSlotIds.length;
 
   // Chỉ trả về slot còn hợp lệ để frontend không thấy slot đã quá hạn/ngày cũ
   const slots = await AvailableSlot.findAll({
@@ -291,6 +323,27 @@ exports.deleteSlot = catchAsync(async (req, res, next) => {
   if (!lecturerId) return next(new AppError("Lecturer profile not found", 404));
   const slot = await AvailableSlot.findByPk(req.params.id);
   if (!slot || slot.Lecturer_ID !== lecturerId) return next(new AppError("Slot not found", 404));
+
+  if (isSlotExpired(slot)) {
+    await rejectPendingAppointmentsForSlots([slot.Slot_ID]);
+  }
+
+  const relatedAppointments = await AppointmentModel.findAll({ where: { Slot_ID: slot.Slot_ID } });
+  const activeAppointments = relatedAppointments.filter((appointment) =>
+    appointment.Status === 'Pending' || appointment.Status === 'Approved'
+  );
+
+  if (activeAppointments.length > 0) {
+    return next(new AppError(
+      "Không thể xóa khung giờ vì vẫn còn lịch hẹn đã duyệt hoặc đang chờ. Vui lòng xử lý những lịch hẹn này trước khi xóa.",
+      400
+    ));
+  }
+
+  if (relatedAppointments.length > 0) {
+    await deleteRejectedAppointmentsForSlot(slot.Slot_ID);
+  }
+
   await slot.destroy();
   res.status(200).json({ status: "SUCCESS", message: "Slot deleted" });
 });

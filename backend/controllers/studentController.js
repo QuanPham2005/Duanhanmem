@@ -16,6 +16,7 @@ const {
   markNotificationKeyAsRead,
   markNotificationKeysAsRead,
 } = require("./notificationHelper");
+const { getVietnamYmdHms, isSlotPastEnd } = require("../utils/vietnamWallClock");
 
 // udck: JWT id là User.ID; APPOINTMENTS.Student_ID là STUDENT.Student_ID
 const getStudentIdFromUserId = async (userId) => {
@@ -81,22 +82,15 @@ const getRegisteredAppointments = async (userId) => {
     ],
   });
 
-  const now = new Date();
-
-  // Filter out appointments whose slot is expired or deleted
   return rows
-    .map((row, idx) => {
+    .map((row) => {
       const p = row.get ? row.get({ plain: true }) : row;
 
       // Skip appointments with missing slots
       if (!p.AvailableSlot) return null;
 
-      // Check if slot is expired
-      const slotDate = p.AvailableSlot.Date;
-      const slotEnd = p.AvailableSlot.EndTime;
-      if (!slotDate || !slotEnd) return null;
-      const slotEndDateTime = new Date(`${slotDate}T${slotEnd}`);
-      if (slotEndDateTime < now) return null;
+      if (!p.AvailableSlot.Date || p.AvailableSlot.EndTime == null) return null;
+      if (isSlotPastEnd(p.AvailableSlot)) return null;
 
       let scheduleAt;
       try {
@@ -319,26 +313,20 @@ exports.getLecturers = catchAsync(async (req, res, next) => {
 });
 
 exports.registeredAppointments = catchAsync(async (req, res, next) => {
-  // Auto-reject pending appointments for expired slots
   const studentId = await getStudentIdFromUserId(req.user.id);
   if (studentId != null) {
-    const now = new Date();
-    const today = now.toISOString().slice(0, 10);
-    const currentTime = now.toTimeString().slice(0, 8);
-    
-    // Find all student's pending appointments for expired slots
+    const { ymd: today, hms: currentTime } = getVietnamYmdHms();
+
     const studentAppointments = await AppointmentModel.findAll({
       where: { Student_ID: studentId, Status: 'Pending' },
       include: [{ association: 'AvailableSlot', attributes: ['Date', 'EndTime'] }]
     });
-    
+
     for (const apt of studentAppointments) {
       const p = apt.get ? apt.get({ plain: true }) : apt;
       if (p.AvailableSlot) {
         const slotDate = p.AvailableSlot.Date;
         const slotEnd = p.AvailableSlot.EndTime;
-        
-        // Check if appointment is past
         if (slotDate < today || (slotDate === today && slotEnd <= currentTime)) {
           await apt.update({ Status: 'Rejected' });
         }
@@ -363,12 +351,8 @@ exports.getLecturerById = catchAsync(async (req, res, next) => {
   });
   if (!lecturer) return next(new AppError("Giảng viên không tồn tại", 404));
   
-  // Auto-reject pending appointments for expired slots
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const currentTime = now.toTimeString().slice(0, 8);
-  
-  // Find all pending appointments for this lecturer's expired slots
+  const { ymd: today, hms: currentTime } = getVietnamYmdHms();
+
   const expiredSlots = await AvailableSlot.findAll({
     where: {
       Lecturer_ID: req.params.id,
@@ -457,11 +441,8 @@ exports.getLecturerSlots = catchAsync(async (req, res, next) => {
   // IMPORTANT:
   // Không hard-delete trong GET endpoint (tránh side effects và lỗi FK).
   // Chỉ loại slot quá hạn khỏi kết quả trả về.
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const currentTime = now.toTimeString().slice(0, 8);
-  
-  // Find expired slots
+  const { ymd: today, hms: currentTime } = getVietnamYmdHms();
+
   const expiredSlots = await AvailableSlot.findAll({
     where: {
       Lecturer_ID: lecturerId,
@@ -542,7 +523,12 @@ const buildStudentNotifications = async (studentId) => {
     });
   };
 
-  const appointmentNotifications = rows
+  const activeRows = rows.filter((row) => {
+    const p = row.get ? row.get({ plain: true }) : row;
+    return p.AvailableSlot && !isSlotPastEnd(p.AvailableSlot);
+  });
+
+  const appointmentNotifications = activeRows
     .map((row) => {
       const p = row.get ? row.get({ plain: true }) : row;
       const status = String(p.Status || "").toLowerCase();
@@ -669,24 +655,18 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
     return next(new AppError("Student profile not found", 404));
   }
 
-  // Auto-reject pending appointments for expired slots
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const currentTime = now.toTimeString().slice(0, 8);
-  
-  // Find all student's pending appointments for expired slots
+  const { ymd: today, hms: currentTime } = getVietnamYmdHms();
+
   const studentAppointments = await AppointmentModel.findAll({
     where: { Student_ID: studentId, Status: 'Pending' },
     include: [{ association: 'AvailableSlot', attributes: ['Date', 'EndTime'] }]
   });
-  
+
   for (const apt of studentAppointments) {
     const p = apt.get ? apt.get({ plain: true }) : apt;
     if (p.AvailableSlot) {
       const slotDate = p.AvailableSlot.Date;
       const slotEnd = p.AvailableSlot.EndTime;
-      
-      // Check if appointment is past
       if (slotDate < today || (slotDate === today && slotEnd <= currentTime)) {
         await apt.update({ Status: 'Rejected' });
       }
@@ -741,10 +721,8 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
       scheduleAt = new Date().toISOString();
     }
 
-    // Check if appointment is expired (past due)
-    const scheduleDate = new Date(scheduleAt);
-    if (scheduleDate < now) {
-      return null; // Skip expired appointments
+    if (isSlotPastEnd(p.AvailableSlot)) {
+      return null;
     }
 
     // Get lecturer info using same logic as getRegisteredAppointments
@@ -803,14 +781,9 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
 
     // Check if appointment has valid slot and is not expired
     let isUpcoming = false;
-    if (p.AvailableSlot) {
-      const slotDate = p.AvailableSlot.Date;
-      const slotEnd = p.AvailableSlot.EndTime;
-      if (slotDate && slotEnd) {
-        const slotEndDateTime = new Date(`${slotDate}T${slotEnd}`);
-        if (slotEndDateTime > now && (status === 'Pending' || status === 'Approved')) {
-          isUpcoming = true;
-        }
+    if (p.AvailableSlot && p.AvailableSlot.Date != null && p.AvailableSlot.EndTime != null) {
+      if (!isSlotPastEnd(p.AvailableSlot) && (status === 'Pending' || status === 'Approved')) {
+        isUpcoming = true;
       }
     }
 
@@ -895,15 +868,8 @@ exports.getSlotById = catchAsync(async (req, res, next) => {
   
   const slotData = slot.get ? slot.get({ plain: true }) : slot;
 
-  // check expiration and remove if necessary
-  try {
-    const endDateTime = new Date(`${slotData.Date}T${slotData.EndTime}`);
-    if (endDateTime <= new Date()) {
-      await slot.destroy();
-      return next(new AppError("Slot has expired", 404));
-    }
-  } catch (e) {
-    // ignore parsing errors
+  if (isSlotPastEnd(slotData)) {
+    return next(new AppError("Slot has expired", 404));
   }
   
   // Format lecturer info

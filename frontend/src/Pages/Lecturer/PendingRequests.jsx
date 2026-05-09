@@ -95,13 +95,11 @@ const PendingRequests = () => {
     return appointment?.Status || "";
   };
 
-  // Ẩn toàn bộ yêu cầu của ngày cũ (sang ngày hôm sau sẽ tự biến mất)
+  // Ẩn khi đã qua giờ kết thúc khung giờ rảnh (cùng ngày nhưng sau EndTime vẫn ẩn)
   const visibleAppointments = appointments.filter((a) => {
-    const slotDate = getDateOnly(a?.AvailableSlot?.Date);
-    if (!slotDate) return true;
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return slotDate >= today;
+    const slotEnd = getSlotEndDateTime(a?.AvailableSlot);
+    if (!slotEnd) return true;
+    return slotEnd.getTime() > Date.now();
   });
 
   const sortedVisibleAppointments = [...visibleAppointments].sort((a, b) => {
