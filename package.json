@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "cors": "^2.8.6",
     "dayjs": "^1.11.20",
     "rc-slider": "^11.1.9"
   }
