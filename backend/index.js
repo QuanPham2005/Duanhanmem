@@ -17,20 +17,23 @@ app.use(express.json({ limit: "50mb" }));
 // Cấu hình CORS chi tiết
 const allowedOrigins = [
   'https://booking-ten-silk.vercel.app', // Domain frontend bạn đang dùng
+  
   'https://booking.vercel.app',          // Domain khác (nếu có)
   'http://localhost:5173',               // Để bạn vẫn test được ở máy local
   'http://localhost:3000'
 ];
 
+
 app.use(cors({
   origin: function (origin, callback) {
-    // Cho phép các request không có origin (như Postman hoặc thiết bị di động)
+    // Cho phép Postman hoặc các ứng dụng không có origin
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Chặn bởi CORS: Origin không hợp lệ'));
     }
-    return callback(null, true);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
