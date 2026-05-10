@@ -1,12 +1,37 @@
 {
-  "experimentalServices": {
-    "frontend": {
-      "entrypoint": "frontend",
-      "routePrefix": "/"
+  "version": 2,
+  "installCommand": "npm install && cd backend && npm install && cd ../frontend && npm install",
+  "builds": [
+    {
+      "src": "backend/index.js",
+      "use": "@vercel/node"
     },
-    "backend": {
-      "entrypoint": "backend",
-      "routePrefix": "/api"
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { 
+        "distDir": "dist",
+        "buildCommand": "npm run build"
+      }
     }
-  }
+  ],
+  "functions": {
+    "backend/index.js": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/index.js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/dist/index.html"
+    }
+  ]
 }
