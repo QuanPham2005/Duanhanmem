@@ -259,7 +259,7 @@ const ManageSlots = () => {
 
         {loading ? (
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
-            Đang tải dữ liệu...
+            Đang tải dữ liệu....
           </div>
         ) : sortedSlots.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
@@ -309,7 +309,7 @@ const ManageSlots = () => {
 
       {slotToDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center"
           onClick={() => setSlotToDelete(null)}
         >
           <div
@@ -321,7 +321,7 @@ const ManageSlots = () => {
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-800">Xác nhận xóa khung giờ</h3>
+                <h3 className="text-lg font-semibold  text-slate-800">Xác nhận xóa khung giờ</h3>
                 <p className="mt-1 text-sm text-slate-600">
                   Bạn có chắc muốn xóa khung giờ{" "}
                   <span className="font-medium text-slate-800">

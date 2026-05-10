@@ -4,7 +4,7 @@ export default function LockoutModal({ open, accountValue, reason, contact, onCl
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center  p-4">
       <div className="w-full max-w-xl rounded-[2rem] overflow-hidden bg-white shadow-2xl">
         <div className="bg-yellow-50 px-8 py-10 text-center">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-yellow-100 text-yellow-700 shadow-sm">
@@ -23,7 +23,7 @@ export default function LockoutModal({ open, accountValue, reason, contact, onCl
         <div className="space-y-4 bg-slate-50 px-8 py-8">
           <div className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex gap-3">
-              <span className="mt-1 text-yellow-600">⚠️</span>
+              <span className="mt-1 text-yellow-600 ">⚠️</span>
               <div>
                 <p className="text-sm font-semibold text-slate-900">Tài khoản:</p>
                 <p className="mt-1 text-sm text-slate-600 break-all">{accountValue}</p>
@@ -49,8 +49,7 @@ export default function LockoutModal({ open, accountValue, reason, contact, onCl
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
-          >
+            className="w-full rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-700">
             Đã hiểu
           </button>
         </div>
