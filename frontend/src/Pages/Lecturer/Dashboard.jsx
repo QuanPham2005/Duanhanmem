@@ -100,7 +100,7 @@ const LecturerDashboard = () => {
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-50"></div>
         <div className="relative z-10">
           <h1 className="text-4xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-white to-teal-100">
-            Chào buổi sáng, {userName}!
+            Xin chào, {userName}!
           </h1>
           <p className="text-white/90 text-lg mb-8">
             Bạn có {stats.pending} yêu cầu tư vấn đang chờ xử lý

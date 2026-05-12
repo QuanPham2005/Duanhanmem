@@ -3,6 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { MagnifyingGlass, Plus } from "phosphor-react";
+import { Eye, EyeOff, Lock, Unlock, Edit3 } from "lucide-react";
 import { Card } from "../../components/UI/Card";
 import { Button } from "../../components/UI/Button";
 
@@ -23,8 +24,17 @@ export default function ManageUsers() {
   const [selectedAccountType, setSelectedAccountType] = useState(null);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
-  const [selectedAccountInfo, setSelectedAccountInfo] = useState({ Full_Name: "", ClassName: "", Dept_ID: "", Major_ID: "" });
+  const [selectedAccountInfo, setSelectedAccountInfo] = useState({ Full_Name: "", ClassName: "", Dept_ID: "", Major_ID: "", Academic_Rank: "", Office_Room: "" });
   const [actionLoading, setActionLoading] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState({
+    student: false,
+    lecturer: false,
+  });
+  const [showEditPassword, setShowEditPassword] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
 
   const [studentForm, setStudentForm] = useState({
     Student_ID: "",
@@ -160,6 +170,7 @@ export default function ManageUsers() {
     setSelectedAccount(account);
     setSelectedAccountType(type);
     setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setShowEditPassword({ currentPassword: false, newPassword: false, confirmPassword: false });
 
     let deptId = account.Dept_ID || "";
     let majorId = account.Major_ID || "";
@@ -177,6 +188,8 @@ export default function ManageUsers() {
       ClassName: account.ClassName || "",
       Dept_ID: deptId,
       Major_ID: majorId,
+      Academic_Rank: account.Academic_Rank || account.academicRank || "",
+      Office_Room: account.Office_Room || account.officeRoom || "",
     });
     setShowPasswordForm(true);
   };
@@ -185,8 +198,9 @@ export default function ManageUsers() {
     setShowPasswordForm(false);
     setSelectedAccount(null);
     setSelectedAccountType(null);
-    setSelectedAccountInfo({ Full_Name: "", ClassName: "", Dept_ID: "", Major_ID: "" });
+    setSelectedAccountInfo({ Full_Name: "", ClassName: "", Dept_ID: "", Major_ID: "", Academic_Rank: "", Office_Room: "" });
     setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setShowEditPassword({ currentPassword: false, newPassword: false, confirmPassword: false });
   };
 
   const updateSelectedAccountInfo = (field, value) => {
@@ -227,6 +241,18 @@ export default function ManageUsers() {
 
       actions.push(
         axios.patch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/admin/students/${id}`, studentPayload, { headers })
+      );
+    } else if (selectedAccountType === "lecturers") {
+      const lecturerPayload = {
+        Full_Name: selectedAccountInfo.Full_Name,
+        Dept_ID: selectedAccountInfo.Dept_ID || null,
+        Major_ID: selectedAccountInfo.Major_ID || null,
+        Academic_Rank: selectedAccountInfo.Academic_Rank || null,
+        Office_Room: selectedAccountInfo.Office_Room || null,
+      };
+
+      actions.push(
+        axios.patch(`${import.meta.env.VITE_BACKEND_URL}/api/v1/admin/teachers/${id}`, lecturerPayload, { headers })
       );
     }
 
@@ -306,7 +332,16 @@ export default function ManageUsers() {
             {activeTab === "students" ? (
               <form onSubmit={createStudent} className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <input required type="number" min="1" placeholder="Mã sinh viên" value={studentForm.Student_ID} onChange={(e) => setStudentForm((p) => ({ ...p, Student_ID: e.target.value }))} className="px-3 py-2 border rounded-lg" />
-                <input required type="password" placeholder="Mật khẩu" value={studentForm.Password} onChange={(e) => setStudentForm((p) => ({ ...p, Password: e.target.value }))} className="px-3 py-2 border rounded-lg" />
+                <div className="relative">
+                  <input required type={showCreatePassword.student ? "text" : "password"} placeholder="Mật khẩu" value={studentForm.Password} onChange={(e) => setStudentForm((p) => ({ ...p, Password: e.target.value }))} className="w-full px-3 py-2 pr-10 border rounded-lg" />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    onClick={() => setShowCreatePassword((prev) => ({ ...prev, student: !prev.student }))}
+                  >
+                    {showCreatePassword.student ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 <input required type="email" placeholder="Email" value={studentForm.Email} onChange={(e) => setStudentForm((p) => ({ ...p, Email: e.target.value }))} className="px-3 py-2 border rounded-lg" />
                 <input required placeholder="Họ và tên" value={studentForm.Full_Name} onChange={(e) => setStudentForm((p) => ({ ...p, Full_Name: e.target.value }))} className="px-3 py-2 border rounded-lg" />
                 <select
@@ -350,7 +385,16 @@ export default function ManageUsers() {
             ) : (
               <form onSubmit={createLecturer} className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <input required placeholder="Mã giảng viên" value={lecturerForm.Username} onChange={(e) => setLecturerForm((p) => ({ ...p, Username: e.target.value }))} className="px-3 py-2 border rounded-lg" />
-                <input required type="password" placeholder="Mật khẩu" value={lecturerForm.Password} onChange={(e) => setLecturerForm((p) => ({ ...p, Password: e.target.value }))} className="px-3 py-2 border rounded-lg" />
+                <div className="relative">
+                  <input required type={showCreatePassword.lecturer ? "text" : "password"} placeholder="Mật khẩu" value={lecturerForm.Password} onChange={(e) => setLecturerForm((p) => ({ ...p, Password: e.target.value }))} className="w-full px-3 py-2 pr-10 border rounded-lg" />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    onClick={() => setShowCreatePassword((prev) => ({ ...prev, lecturer: !prev.lecturer }))}
+                  >
+                    {showCreatePassword.lecturer ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 <input required type="email" placeholder="Email" value={lecturerForm.Email} onChange={(e) => setLecturerForm((p) => ({ ...p, Email: e.target.value }))} className="px-3 py-2 border rounded-lg" />
                 <input required placeholder="Họ và tên" value={lecturerForm.Full_Name} onChange={(e) => setLecturerForm((p) => ({ ...p, Full_Name: e.target.value }))} className="px-3 py-2 border rounded-lg" />
                 <select
@@ -437,11 +481,11 @@ export default function ManageUsers() {
                         </span>
                       </td>
                       <td className="px-4 py-3 space-x-2">
-                        <Button variant={s.Status === "Locked" ? "secondary" : "danger"} size="sm" onClick={() => toggleStatus(s, "students")} disabled={actionLoading}>
-                          {s.Status === "Locked" ? "Mở khóa" : "Khóa"}
+                        <Button variant={s.Status === "Locked" ? "secondary" : "danger"} size="sm" onClick={() => toggleStatus(s, "students")} disabled={actionLoading} title={s.Status === "Locked" ? "Mở khóa" : "Khóa"}>
+                          {s.Status === "Locked" ? <Unlock size={18} /> : <Lock size={18} />}
                         </Button>
-                        <Button variant="primary" size="sm" onClick={() => openPasswordForm(s, "students")} disabled={actionLoading}>
-                          Sửa
+                        <Button variant="primary" size="sm" onClick={() => openPasswordForm(s, "students")} disabled={actionLoading} title="Sửa">
+                          <Edit3 size={18} />
                         </Button>
                       </td>
                     </tr>
@@ -463,11 +507,11 @@ export default function ManageUsers() {
                         </span>
                       </td>
                       <td className="px-4 py-3 space-x-2">
-                        <Button variant={l.Status === "Locked" ? "secondary" : "danger"} size="sm" onClick={() => toggleStatus(l, "lecturers")} disabled={actionLoading}>
-                          {l.Status === "Locked" ? "Mở khóa" : "Khóa"}
+                        <Button variant={l.Status === "Locked" ? "secondary" : "danger"} size="sm" onClick={() => toggleStatus(l, "lecturers")} disabled={actionLoading} title={l.Status === "Locked" ? "Mở khóa" : "Khóa"}>
+                          {l.Status === "Locked" ? <Unlock size={18} /> : <Lock size={18} />}
                         </Button>
-                        <Button variant="primary" size="sm" onClick={() => openPasswordForm(l, "lecturers")} disabled={actionLoading}>
-                          Sửa
+                        <Button variant="primary" size="sm" onClick={() => openPasswordForm(l, "lecturers")} disabled={actionLoading} title="Sửa">
+                          <Edit3 size={18} />
                         </Button>
                       </td>
                     </tr>
@@ -485,6 +529,11 @@ export default function ManageUsers() {
                 <div className="text-sm text-slate-500">{selectedAccount.Full_Name || selectedAccount.name}</div>
               </div>
               <div className="flex flex-wrap gap-2">
+                <Button variant="danger" size="sm" onClick={() => {
+                  const pwd = selectedAccount.Password || "";
+                  console.log("Current password:", pwd);
+                  setPasswordData({ ...passwordData, currentPassword: pwd });
+                }}>Reset mật khẩu</Button>
                 <Button variant="secondary" size="sm" onClick={closePasswordForm}>Hủy</Button>
               </div>
             </div>
@@ -545,35 +594,128 @@ export default function ManageUsers() {
                   </div>
                 </>
               )}
+              {selectedAccountType === "lecturers" && (
+                <>
+                  <div className="space-y-2 md:col-span-3">
+                    <label className="block text-sm font-medium text-slate-700">Tên</label>
+                    <input
+                      type="text"
+                      value={selectedAccountInfo.Full_Name}
+                      onChange={(e) => updateSelectedAccountInfo("Full_Name", e.target.value)}
+                      placeholder="Họ và tên"
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-udck-primary"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-slate-700">Khoa</label>
+                    <select
+                      value={selectedAccountInfo.Dept_ID}
+                      onChange={(e) => {
+                        const selectedDept = e.target.value;
+                        updateSelectedAccountInfo("Dept_ID", selectedDept);
+                        updateSelectedAccountInfo("Major_ID", "");
+                      }}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-udck-primary"
+                    >
+                      <option value="">Chọn khoa</option>
+                      {departments.map((d) => (
+                        <option key={d.Dept_ID} value={d.Dept_ID}>{d.DeptName}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-slate-700">Ngành</label>
+                    <select
+                      value={selectedAccountInfo.Major_ID}
+                      onChange={(e) => updateSelectedAccountInfo("Major_ID", e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-udck-primary"
+                    >
+                      <option value="">Chọn ngành</option>
+                      {majors
+                        .filter((m) => !selectedAccountInfo.Dept_ID || String(m.Dept_ID) === String(selectedAccountInfo.Dept_ID))
+                        .map((m) => (
+                          <option key={m.Major_ID} value={m.Major_ID}>{m.MajorName}</option>
+                        ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-slate-700">Học hàm/Học vị</label>
+                    <input
+                      type="text"
+                      value={selectedAccountInfo.Academic_Rank}
+                      onChange={(e) => updateSelectedAccountInfo("Academic_Rank", e.target.value)}
+                      placeholder="Ví dụ: Thạc sĩ, Tiến sĩ"
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-udck-primary"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-slate-700">Phòng làm việc</label>
+                    <input
+                      type="text"
+                      value={selectedAccountInfo.Office_Room}
+                      onChange={(e) => updateSelectedAccountInfo("Office_Room", e.target.value)}
+                      placeholder="Ví dụ: A101"
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-udck-primary"
+                    />
+                  </div>
+                </>
+              )}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Mật khẩu hiện tại</label>
-                <input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData((p) => ({ ...p, currentPassword: e.target.value }))}
-                  placeholder="Nhập mật khẩu hiện tại nếu cần"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-udck-primary"
-                />
+                <div className="relative">
+                  <input
+                    type={showEditPassword.currentPassword ? "text" : "password"}
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData((p) => ({ ...p, currentPassword: e.target.value }))}
+                    placeholder="Nhập mật khẩu hiện tại nếu cần"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-10 outline-none focus:border-udck-primary"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    onClick={() => setShowEditPassword((prev) => ({ ...prev, currentPassword: !prev.currentPassword }))}
+                  >
+                    {showEditPassword.currentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Mật khẩu mới</label>
-                <input
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData((p) => ({ ...p, newPassword: e.target.value }))}
-                  placeholder="Mật khẩu mới"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-udck-primary"
-                />
+                <div className="relative">
+                  <input
+                    type={showEditPassword.newPassword ? "text" : "password"}
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData((p) => ({ ...p, newPassword: e.target.value }))}
+                    placeholder="Mật khẩu mới"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-10 outline-none focus:border-udck-primary"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    onClick={() => setShowEditPassword((prev) => ({ ...prev, newPassword: !prev.newPassword }))}
+                  >
+                    {showEditPassword.newPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Xác nhận mật khẩu mới</label>
-                <input
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData((p) => ({ ...p, confirmPassword: e.target.value }))}
-                  placeholder="Xác nhận mật khẩu"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-udck-primary"
-                />
+                <div className="relative">
+                  <input
+                    type={showEditPassword.confirmPassword ? "text" : "password"}
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData((p) => ({ ...p, confirmPassword: e.target.value }))}
+                    placeholder="Xác nhận mật khẩu"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-10 outline-none focus:border-udck-primary"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                    onClick={() => setShowEditPassword((prev) => ({ ...prev, confirmPassword: !prev.confirmPassword }))}
+                  >
+                    {showEditPassword.confirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div className="md:col-span-3 flex justify-end">
                 <Button type="submit" size="sm" className="mt-2" disabled={actionLoading}>

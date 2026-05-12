@@ -120,6 +120,7 @@ exports.getAllStudents = catchAsync(async (req, res, next) => {
     Full_Name: s.Full_Name,
     Email: s.Email,
     ClassName: s.ClassName,
+    Password: s.StudentUser?.Password || null,
     Major: s.StudentMajor ? { 
       MajorName: s.StudentMajor.MajorName, 
       DeptName: s.StudentMajor.MajorDepartment?.DeptName 
@@ -252,6 +253,7 @@ exports.getAllTeachers = catchAsync(async (req, res, next) => {
     department: l.LecturerDepartment ? l.LecturerDepartment.DeptName : null,
     Dept_ID: l.Dept_ID,
     Major_ID: l.Major_ID,
+    Password: l.LecturerUser?.Password || null,
   }));
 
   res.status(200).json({ status: "SUCCESS", data: { users } });
