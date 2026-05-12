@@ -1,5 +1,6 @@
 const { sequelize } = require('../db');
 const { DataTypes } = require('sequelize');
+const bcrypt = require('bcrypt');
 
 const User = sequelize.define('User', {
   ID: { 
@@ -32,5 +33,9 @@ const User = sequelize.define('User', {
   tableName: 'USERS',   // kiểm tra lại trong DB, nếu là USER thì sửa
   timestamps: false
 });
+User.prototype.comparePassword = async function(candidatePassword) {
+  // So sánh mật khẩu người dùng nhập vào với mật khẩu đã mã hóa trong DB
+  return await bcrypt.compare(candidatePassword, this.Password);
+};
 
 module.exports = User;
