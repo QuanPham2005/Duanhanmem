@@ -17,7 +17,9 @@ import {
   BookOpen,
   FileText,
   Award,
-  Briefcase
+  Briefcase,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { Button } from "../../components/UI/Button";
 
@@ -44,6 +46,11 @@ const Profile = () => {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+  });
+  const [showPassword, setShowPassword] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
   });
 
   const jwt = () => localStorage.getItem("Teacher jwtToken");
@@ -526,13 +533,22 @@ const Profile = () => {
                     <label className="block text-sm font-semibold text-gray-700">
                       Mật khẩu hiện tại
                     </label>
-                    <input
-                      type="password"
-                      value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all duration-200 text-lg"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword.currentPassword ? "text" : "password"}
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                        className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all duration-200 text-lg"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                        onClick={() => setShowPassword((prev) => ({ ...prev, currentPassword: !prev.currentPassword }))}
+                      >
+                        {showPassword.currentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -540,28 +556,46 @@ const Profile = () => {
                       <label className="block text-sm font-semibold text-gray-700">
                         Mật khẩu mới
                       </label>
-                      <input
-                        type="password"
-                        value={passwordData.newPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all duration-200 text-lg"
-                        required
-                        minLength={6}
-                      />
+                      <div className="relative">
+                        <input
+                          type={showPassword.newPassword ? "text" : "password"}
+                          value={passwordData.newPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                          className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all duration-200 text-lg"
+                          required
+                          minLength={6}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                          onClick={() => setShowPassword((prev) => ({ ...prev, newPassword: !prev.newPassword }))}
+                        >
+                          {showPassword.newPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-gray-700">
                         Xác nhận mật khẩu mới
                       </label>
-                      <input
-                        type="password"
-                        value={passwordData.confirmPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all duration-200 text-lg"
-                        required
-                        minLength={6}
-                      />
+                      <div className="relative">
+                        <input
+                          type={showPassword.confirmPassword ? "text" : "password"}
+                          value={passwordData.confirmPassword}
+                          onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                          className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all duration-200 text-lg"
+                          required
+                          minLength={6}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                          onClick={() => setShowPassword((prev) => ({ ...prev, confirmPassword: !prev.confirmPassword }))}
+                        >
+                          {showPassword.confirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
