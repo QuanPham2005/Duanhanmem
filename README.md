@@ -1,238 +1,151 @@
 # Student-Teacher Booking Appointment System
 
-This is a MERN stack project designed to facilitate the booking of appointments between students and teachers. The system includes functionalities for admins to manage teachers, for teachers to manage their appointments, and for students to book appointments with teachers.
+Ứng dụng đặt lịch giữa sinh viên và giảng viên, gồm quản trị viên, giảng viên và sinh viên.
 
-## Table of Contents
-- [Features](#features)
-- [System Modules](#system-modules)
-  - [Admin](#admin)
-  - [Teacher](#teacher)
-  - [Student](#student)
-- [Tech-Stack-Used](#tech-stack-used)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Screenshots](#screenshots)
-- [Login Acess](#login)
-- [Contributing](#contributing)
+## Kiến trúc dự án
 
-## Features
-- Admin management for adding, updating, and deleting teachers, and managing student accounts.
-- Teacher functionalities for managing their appointment schedules, approving/rejecting appointments, viewing notifications, and viewing all appointments.
-- Student functionalities for booking appointments with teachers, viewing appointments status, and viewing notifications.
+- Kiến trúc: `client-server` tách biệt frontend và backend
+- Frontend: React + Vite
+- Backend: Node.js + Express
+- ORM: Sequelize
+- Cơ sở dữ liệu: MySQL
+- Token/cache hỗ trợ: Redis (ioredis, jwt-redis)
 
-## System Modules
+## Công nghệ chính
 
-### Admin
-- Login
-- Add/Update/Delete Teacher
-- Manage Student Accounts
-- View All Appointments
+### Frontend
+- React
+- Vite
+- Tailwind CSS
+- react-router-dom
+- axios
+- react-icons
+- react-toastify
 
-### Teacher
-- Login
-- Manage Available Appointment Slots
-- View Appointment Requests
-- Approve/Reject Appointments
-- View Notifications
-- View All Appointments
+### Backend
+- Node.js
+- Express
+- Sequelize
+- bcrypt
+- jsonwebtoken
+- dotenv
+- cors
+- mysql2
+- ioredis
+- jwt-redis
 
-### Student
-- Login
-- View Available Teachers and Appointment Slots
-- Book Appointments
-- Cancel Appointments
-- View Appointment Status
-- View Notifications
+### Database
+- MySQL
 
-## Tech-Stack-Used
+## Cấu trúc thư mục chính
 
-**Frontend**
-```bash
-vite (bundler-react)
-tailwindcss (styling)
-react-icons (icons)
-react-router-dom (routing)
-react-toastify (notify)
-axios (API)
-```
-**Backend**
-```bash
-express (API)
-mysql2 (MySQL driver)
-jwt-token (token)
-nodemailer (MAIL)
-bcrypt (encryption)
-```
+- `frontend/` – ứng dụng React + Vite
+- `backend/` – API server Express, kết nối MySQL qua Sequelize
 
-## Installation
+## Tính năng chính
 
-Để chạy dự án này trên máy local, làm theo các bước sau:
+- Quản trị viên:
+  - Đăng nhập
+  - Quản lý giảng viên, sinh viên
+  - Xem lịch hẹn
+- Giảng viên:
+  - Đăng nhập
+  - Quản lý khung giờ trống
+  - Xét duyệt yêu cầu đặt lịch
+  - Xem thông báo
+- Sinh viên:
+  - Đăng nhập
+  - Xem giảng viên và khung giờ trống
+  - Đặt lịch, hủy lịch
+  - Xem trạng thái lịch hẹn
 
-### 1. Cài đặt Node.js
+## Cài đặt
 
-Đảm bảo máy đã cài đặt **Node.js** (phiên bản 18 trở lên) và **npm**.
+### 1. Chuẩn bị môi trường
+
+Đảm bảo đã cài Node.js và npm.
 
 ```bash
-node --version  # Kiểm tra phiên bản Node.js
-npm --version   # Kiểm tra phiên bản npm
+node --version
+npm --version
 ```
 
-### 2. Cài đặt backend dependencies
+### 2. Cài dependencies backend
 
 ```bash
 cd backend
 npm install
 ```
 
-### 3. Cài đặt frontend dependencies
+### 3. Cài dependencies frontend
 
 ```bash
 cd frontend
 npm install
 ```
 
-### 4. Cấu hình biến môi trường cho Backend
+## Cấu hình môi trường
 
-Tạo file `.env` trong thư mục `backend/` với nội dung sau:
+### Backend
+Tạo file `backend/.env` với nội dung:
 
 ```env
-# Cổng server
 PORT=5000
-
-# Chuỗi kết nối database MySQL
 DB_HOST=localhost
 DB_USER=root
 DB_PASS=yourpassword
 DB_NAME=booking_system
 DB_PORT=3306
-
-# Khóa JWT để mã hóa token
-JWT_KEY='your-secret-key-change-in-production'
+JWT_KEY=your-secret-key
 ```
 
-### 5. Cấu hình biến môi trường cho Frontend
-
-Tạo file `.env.local` trong thư mục `frontend/` với nội dung sau:
+### Frontend
+Tạo file `frontend/.env.local` với nội dung:
 
 ```env
-# URL backend API
-VITE_BACKEND_URL='http://localhost:5000'
+VITE_BACKEND_URL=http://localhost:5000
 ```
 
-### 6. Khởi động Database
+## Khởi động Database
 
-Đảm bảo **MySQL** đang chạy trên máy:
+Dự án dùng MySQL. Tạo database nếu chưa có:
 
-```bash
-# Khởi động MySQL Server
-mysql.server start
-
-# Tạo database nếu chưa có
-mysql -u root -p
+```sql
 CREATE DATABASE booking_system;
 ```
 
----
+> Nếu dự án dùng Redis, hãy đảm bảo Redis cũng đang chạy.
 
-## Usage
+## Chạy dự án
 
-### 1. Chạy Backend Server
+### Backend
 
 ```bash
 cd backend
 npm run dev
 ```
 
-Backend sẽ chạy tại: `http://localhost:5000`
-
-### 2. Chạy Frontend Server
-
-Mở terminal mới và chạy:
+### Frontend
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Frontend sẽ chạy tại: `http://localhost:5173`
+Mở trình duyệt và truy cập địa chỉ do Vite cung cấp (mặc định `http://localhost:5173`).
 
-### 3. Truy cập ứng dụng
+## Thông tin đăng nhập mẫu
 
-Mở trình duyệt và truy cập: `http://localhost:5173`
+| Vai trò    | Tài khoản             | Mật khẩu |
+|------------|------------------------|----------|
+| Admin      | admin                 | admin123 |
+| Giảng viên | gv001@kontum.udn.vn   | pass123  |
+| Sinh viên  | sv001@kontum.udn.vn   | pass123  |
 
----
+> Lưu ý: backend hiện vẫn có thể lưu mật khẩu ở dạng plain text nếu chưa dùng hash.
 
-## Tài khoản
+## Ghi chú
 
-Tất cả tài khoản (Admin, Giảng viên, Sinh viên) được cấp bởi nhà trường. Admin có quyền tạo, cập nhật và xóa tài khoản của giảng viên và sinh viên.
-
-**Tài khoản Mặc định (mẫu):**
-
-| Vai trò   | Email                  | Mật khẩu   |
-|-----------|------------------------|------------|
-| Admin     | admin                  | admin123   |
-| Giảng viên| gv001@kontum.udn.vn    | pass123    |
-| Sinh viên | sv001@kontum.udn.vn    | pass123    |
-
-> Lưu ý: hiện tại backend cho phép lưu mật khẩu dạng plain text trong bảng `USERS` và sẽ so sánh trực tiếp nếu mật khẩu không phải hash.
-
-### SQL tạo tài khoản mẫu
-
-```sql
-USE udck;
-
-INSERT INTO USERS (Username, Password, Role, Status) VALUES
-  ('admin', 'admin123', 'Admin', 'Active');
-SET @admin_user_id = LAST_INSERT_ID();
-
-INSERT INTO ADMIN (Full_Name, User_ID) VALUES
-  ('Admin System', @admin_user_id);
-
-INSERT INTO USERS (Username, Password, Role, Status) VALUES
-  ('gv001', 'pass123', 'Lecturer', 'Active');
-SET @lecturer_user_id = LAST_INSERT_ID();
-
-INSERT INTO LECTURER (User_ID, Email, Full_Name) VALUES
-  (@lecturer_user_id, 'gv001@kontum.udn.vn', 'Giảng viên 001');
-
-INSERT INTO USERS (Username, Password, Role, Status) VALUES
-  ('sv001', 'pass123', 'Student', 'Active');
-SET @student_user_id = LAST_INSERT_ID();
-
-INSERT INTO STUDENT (Student_ID, User_ID, Email, Full_Name, ClassName) VALUES
-  (1, @student_user_id, 'sv001@kontum.udn.vn', 'Sinh viên 001', 'CNTT');
-```
-
-## Screenshots
-
-Landing Page 
-
-![landingpage](https://github.com/user-attachments/assets/80681180-c318-4aa8-bce4-25f7b1dcec5b)
-
-Student Dashboard
-
-![student dashboard](https://github.com/user-attachments/assets/fb4e5a37-6062-4db6-a1aa-2dc9cd4fbc49)
-
-Teacher Dashboard
-
-![teacher dashboard](https://github.com/user-attachments/assets/d9e034fa-5d25-4490-9179-5296b19b3536)
-
-
-Admin Dashboard
-
-![admin](https://github.com/user-attachments/assets/f1dd4c78-bf81-4ca8-9a7a-b803b303d474)
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository.
-2. Create your feature branch: `git checkout -b feature/YourFeature`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/YourFeature`
-5. Open a pull request.
-
-## Thank You 
-
-**Keep Coding**
+- Dự án không dùng MongoDB; README trước đó ghi MERN là không chính xác.
+- Đây là ứng dụng full-stack React + Node/Express với database MySQL.
 
