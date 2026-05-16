@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { Badge } from "../../components/UI/Badge";
+import ConfirmModal from "../../components/UI/ConfirmModal";
 import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 import {
@@ -36,22 +37,36 @@ const PendingRequests = () => {
   const [adjusting, setAdjusting] = useState(false);
   const [approveLocation, setApproveLocation] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedCancelAppointment, setSelectedCancelAppointment] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelError, setCancelError] = useState(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const jwt = () => localStorage.getItem("Teacher jwtToken");
+
+  const fetchAppointments = async () => {
+    if (!jwt()) return;
+
+    setLoading(true);
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/teachers/appointments`, {
+        headers: { Authorization: `Bearer ${jwt()}` },
+      });
+      setAppointments(res.data.data?.appointments || []);
+    } catch (error) {
+      setAppointments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!jwt()) {
       navigate("/teacher/login");
       return;
     }
-    // Gọi API lấy tất cả appointments
-    axios
-      .get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/teachers/appointments`, {
-        headers: { Authorization: `Bearer ${jwt()}` },
-      })
-      .then((res) => setAppointments(res.data.data?.appointments || []))
-      .catch(() => setAppointments([]))
-      .finally(() => setLoading(false));
+    fetchAppointments();
   }, [navigate]);
 
   const normalizeStatus = (status) => String(status || "").trim().toLowerCase();
@@ -187,6 +202,43 @@ const PendingRequests = () => {
       end,
       label: start && end ? `${String(start).slice(0, 5)} - ${String(end).slice(0, 5)}` : "N/A",
     };
+  };
+
+  const handleCancelAppointment = (appointment) => {
+    setSelectedCancelAppointment(appointment);
+    setCancelReason("");
+    setCancelError(null);
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelAppointment = async () => {
+    if (!selectedCancelAppointment) return;
+    if (!cancelReason.trim()) {
+      setCancelError("Vui lòng nhập lý do hủy.");
+      return;
+    }
+
+    setCancelLoading(true);
+    try {
+      await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/teachers/appointments/${selectedCancelAppointment.Appoint_ID || selectedCancelAppointment.id}`,
+        {
+          headers: { Authorization: `Bearer ${jwt()}` },
+          data: { reason: cancelReason.trim() },
+        }
+      );
+      setShowCancelModal(false);
+      setSelectedCancelAppointment(null);
+      setCancelReason("");
+      setCancelError(null);
+      await fetchAppointments();
+      toast.success("Hủy lịch hẹn thành công.");
+    } catch (error) {
+      console.error("Cancel appointment error:", error);
+      setCancelError(error.response?.data?.message || "Không thể hủy lịch hẹn. Vui lòng thử lại.");
+    } finally {
+      setCancelLoading(false);
+    }
   };
 
   const toMinutes = (t) => {
@@ -408,7 +460,7 @@ const PendingRequests = () => {
                         {a.Reason || 'Không có lý do'}
                       </p>
 
-                      <div>
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => {
@@ -420,6 +472,15 @@ const PendingRequests = () => {
                         >
                           Xem chi tiết
                         </button>
+                        {(normalizeStatus(getEffectiveStatus(a)).includes("approved") || normalizeStatus(getEffectiveStatus(a)).includes("đã duyệt")) && (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelAppointment(a)}
+                            className="inline-flex rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600"
+                          >
+                            Hủy lịch hẹn
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -540,6 +601,17 @@ const PendingRequests = () => {
                         {getStatusLabel(getEffectiveStatus(selectedAppointment))}
                       </Badge>
                     </div>
+
+                    {normalizeStatus(getEffectiveStatus(selectedAppointment)).includes("approved") || normalizeStatus(getEffectiveStatus(selectedAppointment)).includes("đã duyệt") ? (
+                      <div className="mb-3 flex flex-wrap gap-3">
+                        <button
+                          onClick={() => handleCancelAppointment(selectedAppointment)}
+                          className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600"
+                        >
+                          Hủy lịch hẹn
+                        </button>
+                      </div>
+                    ) : null}
 
                     {isPendingStatus(getEffectiveStatus(selectedAppointment)) ? (
                       <div className="space-y-2">
@@ -703,7 +775,42 @@ const PendingRequests = () => {
           )}
       </>
       )}
-    </div>
+        <ConfirmModal
+          open={showCancelModal}
+          title="Hủy lịch hẹn"
+          description="Nhập lý do hủy lịch hẹn để sinh viên được thông báo."
+          confirmText="Xác nhận hủy"
+          cancelText="Đóng"
+          loading={cancelLoading}
+          onConfirm={confirmCancelAppointment}
+          onCancel={() => {
+            setShowCancelModal(false);
+            setCancelReason("");
+            setCancelError(null);
+            setSelectedCancelAppointment(null);
+          }}
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Bạn đang hủy lịch hẹn với <strong>{selectedCancelAppointment?.AppointmentStudent?.Full_Name || 'Sinh viên'}</strong>.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Lý do hủy</label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => {
+                  setCancelReason(e.target.value);
+                  if (cancelError) setCancelError(null);
+                }}
+                rows={4}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus:border-udck-primary focus:ring-udck-primary/10"
+                placeholder="Ví dụ: Tôi phải hủy do thay đổi lịch trình..."
+              />
+              {cancelError && <p className="mt-2 text-sm text-red-600">{cancelError}</p>}
+            </div>
+          </div>
+        </ConfirmModal>
+      </div>
   );
 };
 

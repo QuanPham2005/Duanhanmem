@@ -184,6 +184,54 @@ exports.adjustAppointment = catchAsync(async (req, res, next) => {
   }
 });
 
+// Hủy lịch hẹn đã duyệt (giảng viên)
+exports.cancelAppointment = catchAsync(async (req, res, next) => {
+  const appointmentId = req.params.id;
+  const lecturerId = await getLecturerIdFromUserId(req.user.id);
+
+  if (!lecturerId) {
+    return next(new AppError("Lecturer profile not found", 404));
+  }
+
+  const appointment = await Appointment.findByPk(appointmentId, {
+    include: [{ model: AvailableSlot, as: 'AvailableSlot' }]
+  });
+
+  if (!appointment) {
+    return next(new AppError("Appointment not found", 404));
+  }
+
+  // Verify appointment belongs to lecturer's slot
+  if (appointment.AvailableSlot && appointment.AvailableSlot.Lecturer_ID !== lecturerId) {
+    return next(new AppError("Unauthorized - cannot cancel other lecturer's appointment", 403));
+  }
+
+  // Only allow cancelling approved appointments
+  if (appointment.Status !== 'Approved') {
+    return next(new AppError(`Cannot cancel appointment with status "${appointment.Status}". Only approved appointments can be cancelled.`, 400));
+  }
+
+  const cancellationReason = req.body.reason || req.body.cancellationReason || req.body.CancellationReason || "";
+  const trimmedReason = String(cancellationReason).trim();
+
+  if (!trimmedReason) {
+    return next(new AppError("Cancellation reason is required", 400));
+  }
+
+  await appointment.update({
+    Status: 'Rejected',
+    CancellationReason: trimmedReason,
+    RejectionReason: `Hủy bởi giảng viên: ${trimmedReason}`,
+    HandledAt: new Date(),
+  });
+
+  res.status(200).json({
+    status: "SUCCESS",
+    message: "Appointment cancelled successfully",
+    data: { appointmentId, cancellationReason: trimmedReason },
+  });
+});
+
 // Danh sách yêu cầu chờ duyệt (Pending)
 exports.getPendingAppointments = catchAsync(async (req, res, next) => {
   const lecturerId = await getLecturerIdFromUserId(req.user.id);
@@ -494,6 +542,19 @@ const buildLecturerNotifications = async (lecturerId) => {
     }
 
     if (status.includes("rejected") || status.includes("từ chối")) {
+      const studentCancelReason = p.CancellationReason || p.RejectionReason?.replace(/^Hủy bởi sinh viên:\s*/i, "")?.trim();
+      if (studentCancelReason) {
+        return {
+          id: `cancelled-${p.Appoint_ID}`,
+          type: "cancelled",
+          title: "Sinh viên đã hủy yêu cầu",
+          message: `Sinh viên ${studentName} đã hủy yêu cầu${locationLabel}. Lý do: ${studentCancelReason}.`,
+          createdAt,
+          read: false,
+          appointmentId: p.Appoint_ID,
+        };
+      }
+
       return {
         id: `rejected-${p.Appoint_ID}`,
         type: "cancelled",

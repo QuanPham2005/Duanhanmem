@@ -422,17 +422,28 @@ exports.cancelAppointment = catchAsync(async (req, res, next) => {
     return next(new AppError("Unauthorized - cannot delete other user's appointment", 403));
   }
 
-  // Only allow cancellation if status is Pending (not Approved or Rejected)
-  if (appointment.Status !== 'Pending') {
+  const cancellationReason = req.body.reason || req.body.cancellationReason || req.body.CancellationReason || "";
+
+  if (!['Pending', 'Approved'].includes(appointment.Status)) {
     return next(new AppError(`Cannot cancel appointment with status "${appointment.Status}"`, 400));
   }
 
-  await appointment.destroy();
+  const trimmedReason = String(cancellationReason).trim();
+  if (!trimmedReason) {
+    return next(new AppError("Cancellation reason is required", 400));
+  }
+
+  await appointment.update({
+    Status: 'Rejected',
+    CancellationReason: trimmedReason,
+    RejectionReason: `Hủy bởi sinh viên: ${trimmedReason}`,
+    HandledAt: new Date(),
+  });
 
   res.status(200).json({
     status: "SUCCESS",
     message: "Appointment cancelled successfully",
-    data: { appointmentId },
+    data: { appointmentId, cancellationReason },
   });
 });
 
@@ -571,6 +582,39 @@ const buildStudentNotifications = async (studentId) => {
       }
 
       if (status.includes("rejected") || status.includes("từ chối")) {
+        // Distinguish between lecturer cancellation and student cancellation vs rejection
+        const rejectionText = p.RejectionReason || "";
+        const isLecturerCancel = rejectionText.startsWith("Hủy bởi giảng viên:");
+        const isStudentCancel = rejectionText.startsWith("Hủy bởi sinh viên:");
+        
+        if (isLecturerCancel) {
+          const lecturerCancelReason = rejectionText.replace(/^Hủy bởi giảng viên:\s*/i, "").trim();
+          return {
+            id: `lecturer-cancelled-${p.Appoint_ID}`,
+            type: "appointment_cancelled",
+            title: "Lịch tư vấn đã bị hủy",
+            message: `${lecturerName} đã hủy lịch tư vấn của bạn${locationLabel}.${lecturerCancelReason ? ` Lý do: ${lecturerCancelReason}.` : ""}`,
+            read: false,
+            createdAt,
+            appointmentId: p.Appoint_ID,
+          };
+        }
+
+        if (isStudentCancel) {
+          // This shouldn't appear in student notifications since they're filtering out their own cancellations
+          // But just in case, we handle it
+          const studentCancelReason = rejectionText.replace(/^Hủy bởi sinh viên:\s*/i, "").trim();
+          return {
+            id: `student-cancelled-${p.Appoint_ID}`,
+            type: "appointment_cancelled",
+            title: "Bạn đã hủy lịch tư vấn",
+            message: `Lịch tư vấn với ${lecturerName}${locationLabel} đã được hủy.${studentCancelReason ? ` Lý do: ${studentCancelReason}.` : ""}`,
+            read: false,
+            createdAt,
+            appointmentId: p.Appoint_ID,
+          };
+        }
+
         return {
           id: `rejected-${p.Appoint_ID}`,
           type: "appointment_rejected",

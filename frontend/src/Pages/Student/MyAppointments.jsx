@@ -16,6 +16,8 @@ const MyAppointments = () => {
   const [dataFetched, setDataFetched] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [selectedCancelId, setSelectedCancelId] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelError, setCancelError] = useState(null);
   const [cancelLoading, setCancelLoading] = useState(false);
 
   const jwt_token = useCallback(() => localStorage.getItem("Student jwtToken"), []);
@@ -233,25 +235,37 @@ const MyAppointments = () => {
 
   const handleCancelAppointment = (appointmentId) => {
     setSelectedCancelId(appointmentId);
+    setCancelReason("");
+    setCancelError(null);
     setShowCancelConfirm(true);
   };
 
   const confirmCancelAppointment = async () => {
     if (!selectedCancelId) return;
+    if (!cancelReason.trim()) {
+      setCancelError("Vui lòng nhập lý do hủy lịch.");
+      return;
+    }
 
     setCancelLoading(true);
     try {
       await axios.delete(
         `${import.meta.env.VITE_BACKEND_URL}/api/v1/student/appointments/${selectedCancelId}`,
-        { headers: { Authorization: `Bearer ${jwt_token()}` } }
+        {
+          headers: { Authorization: `Bearer ${jwt_token()}` },
+          data: { reason: cancelReason.trim() },
+        }
       );
       setDataFetched(false);
       setShowCancelConfirm(false);
       setSelectedCancelId(null);
-      alert("Hủy lịch hẹn thành công!");
+      setCancelReason("");
+      setCancelError(null);
     } catch (err) {
       console.error("Error cancelling appointment:", err);
-      alert("Không thể hủy lịch hẹn. Vui lòng thử lại.");
+      setCancelError(
+        err.response?.data?.message || "Không thể hủy lịch hẹn. Vui lòng thử lại."
+      );
     } finally {
       setCancelLoading(false);
     }
@@ -329,8 +343,11 @@ const MyAppointments = () => {
           <div className="space-y-3">
             {filteredAppointments.map((apt) => {
               const dateTime = formatDateTime(apt);
-              const canCancel = apt.Status?.toLowerCase().includes("pending") || 
-                              apt.Status?.toLowerCase().includes("chờ");
+              const lowerStatus = apt.Status?.toLowerCase() || "";
+              const canCancel = lowerStatus.includes("pending") ||
+                                lowerStatus.includes("chờ") ||
+                                lowerStatus.includes("approved") ||
+                                lowerStatus.includes("đã duyệt");
               
               return (
                 <Card
@@ -405,7 +422,7 @@ const MyAppointments = () => {
                   {canCancel && (
                     <div className="flex justify-end">
                       <button
-                        onClick={() => handleCancelAppointment(apt.Appoint_ID)}
+                        onClick={() => handleCancelAppointment(apt.Appoint_ID || apt._id)}
                         className="text-xs font-medium text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors"
                       >
                         Hủy lịch hẹn
@@ -422,7 +439,7 @@ const MyAppointments = () => {
       <ConfirmModal
         open={showCancelConfirm}
         title="Hủy lịch hẹn"
-        description="Bạn có chắc chắn muốn hủy lịch hẹn này? Hành động này không thể hoàn tác."
+        description="Bạn có chắc chắn muốn hủy lịch hẹn này? Hãy nhập lý do hủy để giảng viên nắm được."
         confirmText="Xác nhận"
         cancelText="Hủy"
         loading={cancelLoading}
@@ -430,8 +447,29 @@ const MyAppointments = () => {
         onCancel={() => {
           setShowCancelConfirm(false);
           setSelectedCancelId(null);
+          setCancelReason("");
+          setCancelError(null);
         }}
-      />
+      >
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Lý do hủy lịch
+          </label>
+          <textarea
+            value={cancelReason}
+            onChange={(e) => {
+              setCancelReason(e.target.value);
+              if (cancelError) setCancelError(null);
+            }}
+            rows={4}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            placeholder="Ví dụ: Tôi có lịch học trùng, xin hủy buổi tư vấn này..."
+          />
+          {cancelError && (
+            <p className="mt-2 text-sm text-red-600">{cancelError}</p>
+          )}
+        </div>
+      </ConfirmModal>
     </StudentLayout>
   );
 };

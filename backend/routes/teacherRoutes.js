@@ -27,6 +27,7 @@ router.post('/notifications/mark-all-read', ...teacherAuth, teacherController.ma
 router.get('/appointments/pending', ...teacherAuth, teacherController.getPendingAppointments);
 router.get('/appointments/:id', ...teacherAuth, teacherController.getAppointmentById);
 router.patch('/appointments/:id/adjust', ...teacherAuth, teacherController.adjustAppointment);
+router.delete('/appointments/:id', ...teacherAuth, teacherController.cancelAppointment);
 router.patch('/appointments/:id/reject', ...teacherAuth, teacherController.disapproveAppointment);
 router.route('/changeApprovalStatus/:id')
   .patch(...teacherAuth, teacherController.approveAppointment)

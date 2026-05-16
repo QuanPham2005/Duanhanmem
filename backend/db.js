@@ -65,6 +65,22 @@ const connectToDB = async () => {
     if (!appointmentHandledCols.length) {
       await sequelize.query(`ALTER TABLE APPOINTMENTS ADD COLUMN HandledAt DATETIME NULL`);
     }
+
+    const [appointmentCancellationCols] = await sequelize.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'APPOINTMENTS' AND COLUMN_NAME = 'CancellationReason'`
+    );
+    if (!appointmentCancellationCols.length) {
+      await sequelize.query(`ALTER TABLE APPOINTMENTS ADD COLUMN CancellationReason TEXT NULL`);
+    }
+
+    const [appointmentStatusType] = await sequelize.query(
+      `SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'APPOINTMENTS' AND COLUMN_NAME = 'Status'`
+    );
+    if (appointmentStatusType.length && !appointmentStatusType[0].COLUMN_TYPE.includes("'Cancelled'")) {
+      await sequelize.query(
+        `ALTER TABLE APPOINTMENTS MODIFY Status ENUM('Pending','Approved','Rejected','Cancelled') NOT NULL DEFAULT 'Pending'`
+      );
+    }
   } catch (err) {
     console.error(
       'Unable to connect to MySQL. Check your `.env` values for DB_URL/DATABASE_URL or DB_HOST/DB_NAME/DB_USER/DB_PASS/DB_PORT.'

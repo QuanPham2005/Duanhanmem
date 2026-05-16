@@ -27,6 +27,8 @@ export default function BookAppointment() {
   const [selectedStart, setSelectedStart] = useState(null);
   const [selectedEnd, setSelectedEnd] = useState(null);
   const [bookedRanges, setBookedRanges] = useState([]);
+  const [hasSelfBooking, setHasSelfBooking] = useState(false);
+  const [hasExistingLecturerBooking, setHasExistingLecturerBooking] = useState(false);
 
   const jwt = () => localStorage.getItem("Student jwtToken");
 
@@ -65,6 +67,7 @@ export default function BookAppointment() {
         // Fetch slot info
         if (lecturerId && slotId) {
           fetchSlotInfo();
+          fetchExistingLecturerBooking();
         }
         
       } catch (err) {
@@ -94,24 +97,42 @@ export default function BookAppointment() {
         return Number(parts[0]) * 60 + Number(parts[1] || 0);
       };
       
-      const ranges = appts
-        .filter((a) => a.Status === "Approved" || a.Status === "Pending")
-        .map((a) => {
-          const start = toMinutes(a.StuStartTime || a.StartTime);
-          const end = toMinutes(a.StuEndTime || a.EndTime);
-          return { 
-            start, 
-            end, 
-            studentId: a.Student_ID, 
-            Status: a.Status,
-            studentName: a.AppointmentStudent?.Full_Name || `Sinh viên ${typeof a.Student_ID === 'string' ? a.Student_ID.slice(-4) : 'Unknown'}`
-          };
-        });
-      
+      const filteredAppts = appts.filter((a) => a.Status === "Approved" || a.Status === "Pending");
+      const ranges = filteredAppts.map((a) => {
+        const start = toMinutes(a.StuStartTime || a.StartTime);
+        const end = toMinutes(a.StuEndTime || a.EndTime);
+        return {
+          start,
+          end,
+          studentId: a.Student_ID,
+          Status: a.Status,
+          studentName: a.AppointmentStudent?.Full_Name || `Sinh viên ${typeof a.Student_ID === 'string' ? a.Student_ID.slice(-4) : 'Unknown'}`
+        };
+      });
+
+      const selfBooking = filteredAppts.some((a) => String(a.Student_ID) === String(studentId));
+      setHasSelfBooking(selfBooking);
       setBookedRanges(ranges);
     } catch (err) {
       console.error('Error in fetchBookedRanges:', err);
       setBookedRanges([]);
+    }
+  };
+
+  const fetchExistingLecturerBooking = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/student/appointments/registered`, {
+        headers: { Authorization: `Bearer ${jwt()}` },
+      });
+      const appointments = res.data.appointments || [];
+      const existingBooking = appointments.some((apt) => {
+        const lecturerFromAppointment = apt.AvailableSlot?.SlotLecturer?.Lecturer_ID || apt.AvailableSlot?.Lecturer_ID || apt.Lecturer_ID || apt.lecturerId || apt.Lecturer?._id || apt.lecturer?._id;
+        return String(lecturerFromAppointment) === String(lecturerId) && ["Approved", "Pending"].includes(apt.Status);
+      });
+      setHasExistingLecturerBooking(existingBooking);
+    } catch (err) {
+      console.error("Error fetching existing lecturer booking:", err);
+      setHasExistingLecturerBooking(false);
     }
   };
 
@@ -180,6 +201,16 @@ export default function BookAppointment() {
     }
     if (selectedStart == null || selectedEnd == null) {
       toast.error("Vui lòng chọn khoảng thời gian");
+      return;
+    }
+
+    if (hasSelfBooking) {
+      toast.error("Bạn đã đặt lịch trong khung giờ này.");
+      return;
+    }
+
+    if (hasExistingLecturerBooking) {
+      toast.error("Bạn đã có lịch hẹn với giảng viên này. Không thể đặt lại.");
       return;
     }
 
@@ -468,6 +499,19 @@ export default function BookAppointment() {
                     />
                   </div>
 
+                  {(hasSelfBooking || hasExistingLecturerBooking) && (
+                    <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700">
+                      <p className="font-semibold">
+                        {hasExistingLecturerBooking
+                          ? "Bạn đã có lịch hẹn với giảng viên này. Không thể đặt lại."
+                          : "Bạn đã đặt lịch với giảng viên này trong khung giờ hiện tại."}
+                      </p>
+                      {hasExistingLecturerBooking && (
+                        <p className="text-sm text-red-600">Vui lòng hủy hoặc chờ giảng viên xử lý yêu cầu hiện tại trước khi đặt lịch mới.</p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Action Buttons */}
                   <div className="flex gap-4">
                     <button
@@ -479,7 +523,7 @@ export default function BookAppointment() {
                     </button>
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={submitting || hasSelfBooking}
                       className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {submitting ? "Đang xử lý..." : "Xác nhận đặt lịch"}

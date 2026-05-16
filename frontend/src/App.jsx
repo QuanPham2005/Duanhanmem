@@ -25,19 +25,7 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
-    // Clear all login session when app starts
-    // Uncomment the line below if you want to clear localStorage on every app reload
-    // localStorage.clear();
-    
-    // Or if you want to clear only auth-related data:
-    localStorage.removeItem("Teacher jwtToken");
-    localStorage.removeItem("Student jwtToken");
-    localStorage.removeItem("jwtToken");
-    localStorage.removeItem("Student Name");
-    localStorage.removeItem("Teacher Name");
-    localStorage.removeItem("Admin Name");
-    localStorage.removeItem("email");
-    sessionStorage.clear();
+    // Preserve login state on reload. Only reset UI theme state here.
     document.documentElement.classList.remove("dark");
   }, []);
 
