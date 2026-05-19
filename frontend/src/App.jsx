@@ -1,10 +1,8 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
 import Studentsignup from "./components/Signup/Student";
-import Studentlogin from "./components/Login/StudentForm";
-import Lecturerlogin from "./components/Login/LecturerForm";
-import AdminLogin from "./components/Login/AdminForm";
+import UnifiedLogin from "./components/Login/UnifiedLogin";
 import LandingPage from "./Pages/LandingPage";
 
 // route groups
@@ -51,13 +49,14 @@ function App() {
             }
           />
           <Route
-            path="/student/login"
+            path="/login"
             element={
               <PageTransition>
-                <Studentlogin />
+                <UnifiedLogin />
               </PageTransition>
             }
           />
+          <Route path="/student/login" element={<Navigate to="/login" replace />} />
           <Route
             path="/student/signup"
             element={
@@ -66,22 +65,8 @@ function App() {
               </PageTransition>
             }
           />
-          <Route
-            path="/teacher/login"
-            element={
-              <PageTransition>
-                <Lecturerlogin />
-              </PageTransition>
-            }
-          />
-          <Route
-            path="/admin/login"
-            element={
-              <PageTransition>
-                <AdminLogin />
-              </PageTransition>
-            }
-          />
+          <Route path="/teacher/login" element={<Navigate to="/login" replace />} />
+          <Route path="/admin/login" element={<Navigate to="/login" replace />} />
 
           {/* role-based routes */}
           <Route path="/student/*" element={<StudentRoutes />} />

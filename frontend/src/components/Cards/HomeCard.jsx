@@ -14,7 +14,7 @@ function HomeCard({ img, name }) {
         <div className="p-4 text-center">
           <h5 className="text-xl font-semibold mb-2">{capitalizeName(name)}</h5>
           <Link
-            to={`/${name}/login`}
+            to="/login"
             className="btn-udck"
           >
             Let's Go

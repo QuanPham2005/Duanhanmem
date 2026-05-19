@@ -29,8 +29,15 @@ exports.signToken = signToken;
 // LOGIN: cho phép login bằng Username **hoặc** Email
 exports.login = catchAsync(async (req, res, next) => {
   const { username: rawUsername, email: rawEmail, password } = req.body;
-  const username = typeof rawUsername === 'string' ? rawUsername.trim() : rawUsername;
-  const email = typeof rawEmail === 'string' ? rawEmail.trim() : rawEmail;
+  let username = typeof rawUsername === 'string' ? rawUsername.trim() : rawUsername;
+  let email = typeof rawEmail === 'string' ? rawEmail.trim() : rawEmail;
+
+  // Normalize: if client accidentally sent an email inside `username`, treat it as email
+  if (!email && typeof username === 'string' && username.includes('@')) {
+    email = username;
+    username = undefined;
+  }
+
   const identifier = username || email;
   const isEmailInput = typeof identifier === 'string' && identifier.includes('@');
 

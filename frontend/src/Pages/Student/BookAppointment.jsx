@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -29,6 +29,8 @@ export default function BookAppointment() {
   const [bookedRanges, setBookedRanges] = useState([]);
   const [hasSelfBooking, setHasSelfBooking] = useState(false);
   const [hasExistingLecturerBooking, setHasExistingLecturerBooking] = useState(false);
+  const [now, setNow] = useState(new Date());
+  const MIN_BOOKING_DURATION = 15;
 
   const jwt = () => localStorage.getItem("Student jwtToken");
 
@@ -43,6 +45,54 @@ export default function BookAppointment() {
       return null;
     }
   };
+
+  const parseTimeToMinutes = useCallback((timeString) => {
+    if (!timeString) return 0;
+    const parts = String(timeString).split(":");
+    return Number(parts[0] || 0) * 60 + Number(parts[1] || 0);
+  }, []);
+
+  const parseDateOnly = useCallback((value) => {
+    if (!value) return null;
+    const stringValue = String(value).slice(0, 10);
+    const parts = stringValue.split("-").map((n) => Number(n));
+    if (parts.length !== 3 || parts.some((p) => Number.isNaN(p))) return null;
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }, []);
+
+  const currentMinutes = useMemo(() => now.getHours() * 60 + now.getMinutes(), [now]);
+  const slotDateObject = useMemo(() => parseDateOnly(slotInfo?.Date || date), [slotInfo, date, parseDateOnly]);
+  const todayDateObject = useMemo(() => new Date(now.getFullYear(), now.getMonth(), now.getDate()), [now]);
+
+  const expiredRange = useMemo(() => {
+    if (!slotInfo || startMin == null || endMax == null || !slotDateObject) return null;
+    const slotStart = startMin;
+    const slotEnd = endMax;
+    if (slotDateObject < todayDateObject) {
+      return { start: slotStart, end: slotEnd };
+    }
+    if (slotDateObject.getTime() === todayDateObject.getTime()) {
+      const expiredEnd = Math.min(currentMinutes, slotEnd);
+      if (expiredEnd > slotStart) {
+        return { start: slotStart, end: expiredEnd };
+      }
+    }
+    return null;
+  }, [slotInfo, startMin, endMax, slotDateObject, todayDateObject, currentMinutes]);
+
+  const effectiveStartMin = useMemo(() => {
+    if (startMin == null || endMax == null || !slotDateObject) return startMin;
+    if (slotDateObject.getTime() === todayDateObject.getTime()) {
+      return Math.min(Math.max(startMin, currentMinutes), endMax);
+    }
+    return startMin;
+  }, [startMin, endMax, slotDateObject, todayDateObject, currentMinutes]);
+
+  const slotExpired = useMemo(() => {
+    if (!slotInfo || startMin == null || endMax == null || !slotDateObject) return false;
+    if (slotDateObject < todayDateObject) return true;
+    return slotDateObject.getTime() === todayDateObject.getTime() && currentMinutes >= endMax;
+  }, [slotInfo, startMin, endMax, slotDateObject, todayDateObject, currentMinutes]);
   const studentId = getStudentIdFromToken();
 
   useEffect(() => {
@@ -85,22 +135,21 @@ export default function BookAppointment() {
     }
   }, [lecturerId, slotId, navigate]);
 
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const fetchBookedRanges = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/student/slots/${slotId}/appointments`, {
         headers: { Authorization: `Bearer ${jwt()}` },
       });
       const appts = res.data.data?.appointments || [];
-      const toMinutes = (t) => {
-        if (!t) return 0;
-        const parts = t.split(":");
-        return Number(parts[0]) * 60 + Number(parts[1] || 0);
-      };
-      
       const filteredAppts = appts.filter((a) => a.Status === "Approved" || a.Status === "Pending");
       const ranges = filteredAppts.map((a) => {
-        const start = toMinutes(a.StuStartTime || a.StartTime);
-        const end = toMinutes(a.StuEndTime || a.EndTime);
+        const start = parseTimeToMinutes(a.StuStartTime || a.StartTime);
+        const end = parseTimeToMinutes(a.StuEndTime || a.EndTime);
         return {
           start,
           end,
@@ -152,13 +201,8 @@ export default function BookAppointment() {
       const s = slots.find((x) => String(x.Slot_ID) === String(slotId));
       if (s) {
         setSlotInfo(s);
-        const toMinutes = (t) => {
-          if (!t) return 0;
-          const parts = t.split(":");
-          return Number(parts[0]) * 60 + Number(parts[1] || 0);
-        };
-        const sMin = toMinutes(s.StartTime || "00:00");
-        const eMax = toMinutes(s.EndTime || "23:59");
+        const sMin = parseTimeToMinutes(s.StartTime || "00:00");
+        const eMax = parseTimeToMinutes(s.EndTime || "23:59");
         setStartMin(sMin);
         setEndMax(eMax);
         setSelectedStart(sMin);
@@ -183,9 +227,32 @@ export default function BookAppointment() {
   };
 
   const handleSliderChange = (vals) => {
-    setSelectedStart(vals[0]);
+    const allowedStart = effectiveStartMin ?? vals[0];
+    setSelectedStart(Math.max(vals[0], allowedStart));
     setSelectedEnd(vals[1]);
   };
+
+  useEffect(() => {
+    if (effectiveStartMin == null || selectedStart == null || selectedEnd == null || endMax == null) return;
+
+    let nextStart = selectedStart;
+    let nextEnd = selectedEnd;
+
+    if (selectedStart < effectiveStartMin) {
+      nextStart = effectiveStartMin;
+    }
+
+    if (selectedEnd <= effectiveStartMin) {
+      nextEnd = Math.min(effectiveStartMin + MIN_BOOKING_DURATION, endMax);
+    }
+
+    if (nextStart !== selectedStart) {
+      setSelectedStart(nextStart);
+    }
+    if (nextEnd !== selectedEnd) {
+      setSelectedEnd(nextEnd);
+    }
+  }, [effectiveStartMin, selectedStart, selectedEnd, endMax]);
 
   const formatTime = (minutes) => {
     const h = Math.floor(minutes / 60).toString().padStart(2, '0');
@@ -201,6 +268,18 @@ export default function BookAppointment() {
     }
     if (selectedStart == null || selectedEnd == null) {
       toast.error("Vui lòng chọn khoảng thời gian");
+      return;
+    }
+    if (slotExpired) {
+      toast.error("Khung giờ đã trôi qua và không còn khả dụng.");
+      return;
+    }
+    if (selectedStart < (effectiveStartMin ?? 0)) {
+      toast.error("Khoảng thời gian đã trôi qua. Vui lòng chọn giờ hợp lệ.");
+      return;
+    }
+    if (selectedEnd - selectedStart < MIN_BOOKING_DURATION) {
+      toast.error(`Thời gian tư vấn tối thiểu là ${MIN_BOOKING_DURATION} phút`);
       return;
     }
 
@@ -220,6 +299,11 @@ export default function BookAppointment() {
     );
     if (hasOverlap) {
       toast.error("Khoảng thời gian đã được đặt bởi sinh viên khác");
+      return;
+    }
+
+    if (selectedStart < (effectiveStartMin ?? 0)) {
+      toast.error("Khoảng thời gian đã trôi qua. Vui lòng chọn giờ hợp lệ.");
       return;
     }
 
@@ -355,6 +439,12 @@ export default function BookAppointment() {
                         Chọn khoảng thời gian
                       </label>
                       <div className="bg-gray-50 rounded-xl p-6 space-y-6">
+                        {slotExpired && (
+                          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">
+                            <p className="font-semibold">Khoảng thời gian này đã trôi qua một phần hoặc toàn bộ.</p>
+                            <p className="text-sm mt-1">Phần màu xám là thời gian đã hết hạn và không thể chọn.</p>
+                          </div>
+                        )}
                         {/* Time Range Display */}
                         <div className="bg-gray-100 rounded-lg p-4 border border-gray-200">
                           <div className="flex justify-between text-sm text-gray-600 font-medium">
@@ -374,6 +464,18 @@ export default function BookAppointment() {
                           <div className="relative bg-gray-200 rounded-full h-3 overflow-hidden">
                             {/* Background track */}
                             <div className="absolute inset-0 bg-gray-300" />
+
+                            {/* Expired past range */}
+                            {expiredRange && expiredRange.end > expiredRange.start && startMin !== null && endMax !== null && (
+                              <div
+                                title={`Đã quá hạn: ${formatTime(expiredRange.start)} - ${formatTime(expiredRange.end)}`}
+                                className="absolute top-0 bottom-0 bg-gray-400 rounded-full"
+                                style={{
+                                  left: `${((expiredRange.start - startMin) / (endMax - startMin)) * 100}%`,
+                                  width: `${((expiredRange.end - expiredRange.start) / (endMax - startMin)) * 100}%`
+                                }}
+                              />
+                            )}
                             
                             {/* Booked ranges - MÀU ĐỎ PHÂN BIỆT */}
                             {bookedRanges.filter(b => b && typeof b === 'object' && b.start !== undefined && b.end !== undefined).map((b, idx) => {
@@ -409,10 +511,11 @@ export default function BookAppointment() {
                               <div className="w-full">
                                 <Slider
                                   range
-                                  min={startMin}
+                                  min={effectiveStartMin ?? startMin}
                                   max={endMax}
                                   step={1}
                                   allowCross={false}
+                                  disabled={slotExpired}
                                   value={[selectedStart, selectedEnd]}
                                   onChange={handleSliderChange}
                                   className="w-full"
@@ -436,6 +539,10 @@ export default function BookAppointment() {
                             <div className="flex items-center gap-2">
                               <div className="w-6 h-4 rounded bg-gradient-to-r from-red-400 to-red-500 border border-red-600" />
                               <span className="text-gray-700 font-medium">Đã được đặt</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-4 rounded bg-gray-400 border border-gray-500" />
+                              <span className="text-gray-700 font-medium">Đã trôi qua</span>
                             </div>
                           </div>
 

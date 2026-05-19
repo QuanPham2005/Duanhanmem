@@ -40,7 +40,7 @@ function StudentRegister() {
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/student/register`, requestData);
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);
-        navigate("/student/login");
+        navigate("/login");
         toast.success("Account Created Successfully");
       } else {
         toast.error(response.data.message || "Failed to register");
@@ -125,7 +125,7 @@ function StudentRegister() {
                     value="Sign Up"
                     className="bg-blue-500 text-white p-2 rounded cursor-pointer hover:bg-blue-600 w-full"
                   />
-                  <Link to="/student/login" className="w-full">
+                  <Link to="/login" className="w-full">
                     <button className="bg-blue-500 text-white p-2 rounded cursor-pointer hover:bg-blue-600 w-full">
                       Login
                     </button>
