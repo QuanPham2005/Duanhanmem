@@ -208,11 +208,11 @@ function UnifiedLogin() {
                   <div className="space-y-2 text-sm text-slate-700">
                     <div className="flex items-center justify-between rounded-full bg-slate-100 px-3 py-2">
                       <span className="font-medium">Sinh viên</span>
-                      <span className="text-slate-500">sv001@kontum.udn.vn</span>
+                      <span className="text-slate-500">sv001@udck.udn.vn</span>
                     </div>
                     <div className="flex items-center justify-between rounded-full bg-slate-100 px-3 py-2">
                       <span className="font-medium">Giảng viên</span>
-                      <span className="text-slate-500">gv001@kontum.udn.vn</span>
+                      <span className="text-slate-500">gv001@udck.udn.vn</span>
                     </div>
                     <div className="flex items-center justify-between rounded-full bg-slate-100 px-3 py-2">
                       <span className="font-medium">Admin</span>

@@ -154,8 +154,8 @@ Mở trình duyệt và truy cập địa chỉ do Vite cung cấp (mặc địn
 | Vai trò    | Tài khoản             | Mật khẩu |
 |------------|------------------------|----------|
 | Admin      | admin                 | admin123 |
-| Giảng viên | gv001@kontum.udn.vn   | pass123  |
-| Sinh viên  | sv001@kontum.udn.vn   | pass123  |
+| Giảng viên | gv001@udck.udn.vn   | pass123  |
+| Sinh viên  | sv001@udck.udn.vn   | pass123  |
 
 > Lưu ý: hiện tại backend cho phép lưu mật khẩu dạng plain text trong bảng `USERS` và sẽ so sánh trực tiếp nếu mật khẩu không phải hash.
 
